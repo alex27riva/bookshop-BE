@@ -2,12 +2,14 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
 from flask_bcrypt import Bcrypt
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///books.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'  # Change this to a secure secret key
 db = SQLAlchemy(app)
+CORS(app)  # Enable CORS for all routes
 bcrypt = Bcrypt(app)
 
 
@@ -61,6 +63,12 @@ def register():
     data = request.json
     email = data.get('email')
     password = data.get('password')
+
+    # Check if the user already exists
+    existing_user = user_datastore.find_user(email=email)
+    if existing_user:
+        return jsonify({"error": "User with this email already exists"}), 400
+
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     new_user = user_datastore.create_user(email=email, password=hashed_password, active=True)
@@ -75,7 +83,7 @@ def login():
     email = data.get('email')
     password = data.get('password')
 
-    user = user_datastore.get_user(email)
+    user = user_datastore.find_user(email=email)
 
     if user and bcrypt.check_password_hash(user.password, password):
         return jsonify({"message": "Login successful"})
