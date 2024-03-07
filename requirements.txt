@@ -1,0 +1,5 @@
+Flask~=3.0.2
+Flask-SQLAlchemy
+flask-security-too
+flask-bcrypt
+setuptools
