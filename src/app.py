@@ -21,6 +21,8 @@ class Role(db.Model, RoleMixin):
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
     active = db.Column(db.Boolean)
@@ -62,6 +64,8 @@ security = Security(app, user_datastore)
 def register():
     data = request.json
     email = data.get('email')
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
     password = data.get('password')
 
     # Check if the user already exists
@@ -71,7 +75,7 @@ def register():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    new_user = user_datastore.create_user(email=email, password=hashed_password, active=True)
+    new_user = user_datastore.create_user(email=email, first_name=first_name, last_name=last_name, password=hashed_password, active=True)
     db.session.commit()
 
     return jsonify({"message": "User registered successfully"})
