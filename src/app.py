@@ -3,11 +3,26 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
+import requests
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///books.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your_secret_key'  # Change this to a secure secret key
+
+# Retrieve environment variables
+CLIENT_ID = os.getenv('CLIENT_ID')
+CLIENT_SECRET = os.getenv('CLIENT_SECRET')
+REDIRECT_URI = os.getenv('REDIRECT_URI')
+KEYCLOAK_TOKEN_ENDPOINT = os.getenv('KEYCLOAK_TOKEN_ENDPOINT')
+
+app.config.update({
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///books.db',
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+    'SECRET_KEY': 'ThisIsNotASecureKeyForProduction!',
+})
 db = SQLAlchemy(app)
 CORS(app)  # Enable CORS for all routes
 bcrypt = Bcrypt(app)
@@ -49,15 +64,39 @@ class Book(db.Model):
 class CartItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     book = db.relationship('Book', backref=db.backref('cart_items', lazy=True))
+    user = db.relationship('User', backref=db.backref('cart_items', lazy=True))
 
 
 # Create the database
-#db.create_all()
+# db.create_all()
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
+
+
+# This route handles the callback from the Flutter frontend after authentication
+@app.route('/auth/callback', methods=['GET'])
+def handle_auth_callback():
+    authorization_code = request.args.get('code')
+
+    if authorization_code:
+        token_response = requests.post(KEYCLOAK_TOKEN_ENDPOINT, data={
+            'grant_type': 'authorization_code',
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET,
+            'redirect_uri': REDIRECT_URI,
+            'code': authorization_code
+        })
+
+        if token_response.status_code == 200:
+            access_token = token_response.json().get('access_token')
+            # Now you have the access token, you can store it or use it as needed
+            return jsonify({'access_token': access_token})
+
+    return jsonify({'error': 'No authorization code provided'}), 400
 
 
 @app.route('/api/register', methods=['POST'])
@@ -75,7 +114,8 @@ def register():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    new_user = user_datastore.create_user(email=email, first_name=first_name, last_name=last_name, password=hashed_password, active=True)
+    new_user = user_datastore.create_user(email=email, first_name=first_name, last_name=last_name,
+                                          password=hashed_password, active=True)
     db.session.commit()
 
     return jsonify({"message": "User registered successfully"})
@@ -128,20 +168,45 @@ def get_cart_items():
     return jsonify(cart_list)
 
 
-@app.route('/api/cart', methods=['POST'])
-@login_required
+# Define your route for adding a book to the cart
+@app.route('/api/add_to_cart', methods=['POST'])
+@login_required  # Ensure user is authenticated via Keycloak OAuth
 def add_to_cart():
+    # Get data from request
     data = request.json
     book_id = data.get('book_id')
-    book = Book.query.get(book_id)
 
-    if book:
-        cart_item = CartItem(book=book)
-        db.session.add(cart_item)
-        db.session.commit()
-        return jsonify({"message": "Book added to the cart"})
-    else:
-        return jsonify({"error": "Book not found"}), 404
+    # Check if book_id is provided
+    if not book_id:
+        return jsonify({'error': 'Book ID is required'}), 400
+
+    # Check if the book exists
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify({'error': 'Book not found'}), 404
+
+    # Create a new cart item for the current user
+    cart_item = CartItem(book_id=book_id, user_id=current_user.id)
+    db.session.add(cart_item)
+    db.session.commit()
+
+    return jsonify({'message': 'Book added to cart successfully'}), 200
+
+
+# @app.route('/api/cart', methods=['POST'])
+# @login_required
+# def add_to_cart():
+#     data = request.json
+#     book_id = data.get('book_id')
+#     book = Book.query.get(book_id)
+#
+#     if book:
+#         cart_item = CartItem(book=book)
+#         db.session.add(cart_item)
+#         db.session.commit()
+#         return jsonify({"message": "Book added to the cart"})
+#     else:
+#         return jsonify({"error": "Book not found"}), 404
 
 
 if __name__ == '__main__':
