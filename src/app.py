@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
@@ -9,6 +10,8 @@ import os
 
 # Load environment variables from .env file
 load_dotenv()
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 
@@ -78,9 +81,11 @@ security = Security(app, user_datastore)
 
 
 # This route handles the callback from the Flutter frontend after authentication
-@app.route('/auth/callback', methods=['GET'])
+@app.route('/auth/callback', methods=['POST'])
 def handle_auth_callback():
-    authorization_code = request.args.get('code')
+    data = request.json
+    logging.debug(f"Callback received {data}")
+    authorization_code = data.get('code')
 
     if authorization_code:
         token_response = requests.post(KEYCLOAK_TOKEN_ENDPOINT, data={
@@ -90,11 +95,15 @@ def handle_auth_callback():
             'redirect_uri': REDIRECT_URI,
             'code': authorization_code
         })
+        logging.debug(f"Token response: {token_response}")
 
         if token_response.status_code == 200:
             access_token = token_response.json().get('access_token')
+            logging.debug(f"Access token: {access_token}")
             # Now you have the access token, you can store it or use it as needed
             return jsonify({'access_token': access_token})
+        else:
+            logging.debug(f"Token request: {token_response.request.body}")
 
     return jsonify({'error': 'No authorization code provided'}), 400
 
