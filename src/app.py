@@ -1,12 +1,13 @@
 import logging
 from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMixin, login_required, current_user
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
 import os
+
+from src.models import db, User, Role, Book, CartItem
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,50 +27,10 @@ app.config.update({
     'SQLALCHEMY_TRACK_MODIFICATIONS': False,
     'SECRET_KEY': 'ThisIsNotASecureKeyForProduction!',
 })
-db = SQLAlchemy(app)
+db.init_app(app)
 CORS(app)  # Enable CORS for all routes
 bcrypt = Bcrypt(app)
 
-
-# Define the User and Role models for Flask-Security
-class Role(db.Model, RoleMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), unique=True)
-
-
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(255))
-    last_name = db.Column(db.String(255))
-    email = db.Column(db.String(255), unique=True)
-    password = db.Column(db.String(255))
-    active = db.Column(db.Boolean)
-    roles = db.relationship('Role', secondary='user_roles')
-    fs_uniquifier = db.Column(db.String(64), unique=True)
-
-
-# Define the UserRoles model for the many-to-many relationship between users and roles
-class UserRoles(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-
-
-# Define the Book model
-class Book(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
-    author = db.Column(db.String(255), nullable=False)
-    cover_image_url = db.Column(db.String(255))
-
-
-# Define the CartItem model
-class CartItem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    book = db.relationship('Book', backref=db.backref('cart_items', lazy=True))
-    user = db.relationship('User', backref=db.backref('cart_items', lazy=True))
 
 
 # Create the database
@@ -103,7 +64,7 @@ def handle_auth_callback():
             # Now you have the access token, you can store it or use it as needed
             return jsonify({'access_token': access_token})
         else:
-            logging.debug(f"Token request: {token_response.request.body}")
+            logging.debug(f"Token response: {token_response.text}")
 
     return jsonify({'error': 'No authorization code provided'}), 400
 
