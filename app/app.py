@@ -20,6 +20,7 @@ app = Flask(__name__)
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
+GRANT_TYPE = os.getenv('GRANT_TYPE')
 KEYCLOAK_TOKEN_ENDPOINT = os.getenv('KEYCLOAK_TOKEN_ENDPOINT')
 
 app.config.update({
@@ -30,8 +31,6 @@ app.config.update({
 db.init_app(app)
 CORS(app)  # Enable CORS for all routes
 bcrypt = Bcrypt(app)
-
-
 
 # Create the database
 # db.create_all()
@@ -51,7 +50,7 @@ def handle_auth_callback():
 
     if authorization_code:
         token_data = {
-            'grant_type': 'authorization_code',
+            'grant_type': GRANT_TYPE,
             'client_id': CLIENT_ID,
             'client_secret': CLIENT_SECRET,
             'redirect_uri': REDIRECT_URI,
@@ -59,7 +58,7 @@ def handle_auth_callback():
         }
 
         token_response = requests.post(KEYCLOAK_TOKEN_ENDPOINT, data=token_data)
-        logging.debug(f"Token response status: {token_response.status_code}")
+        logging.debug(f"Request data: {token_response.request.body}")
 
         if token_response.ok:
             token_json = token_response.json()
