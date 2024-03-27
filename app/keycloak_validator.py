@@ -1,5 +1,6 @@
 import requests
 import logging
+import jwt
 
 logging.basicConfig(
     level=logging.DEBUG,  # Set the logging level
@@ -8,23 +9,17 @@ logging.basicConfig(
 
 
 class KeycloakValidator:
-    def __init__(self, introspect_url, client_id):
+    def __init__(self, certs_url, client_id):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.introspect_url = introspect_url
+        self.certs_url = certs_url
         self.client_id = client_id
+        self.public_key = self._get_public_key()
 
-    def validate_token(self, token):
-        data = {
-            'token': token,
-            'client_id': self.client_id
-        }
+    def _get_public_key(self):
+        response = requests.get(self.certs_url)
+        keys = response.json()["keys"]
+        for key in keys:
+            if key["kid"]:
+                return jwt.algorithms.RSAAlgorithm.from_jwk(key)
+        return None
 
-        response = requests.post(self.introspect_url, data=data)
-        self.logger.debug(response.json())
-
-        if response.status_code == 200:
-            self.logger.debug("Token sent to Keycloak")
-            response_data = response.json()
-            return response_data.get('active', False)
-        else:
-            return False

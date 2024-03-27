@@ -1,14 +1,15 @@
-import base64
 import logging
 
 import requests
 from flask import Flask, jsonify, request
 from flask_security import Security, SQLAlchemyUserDatastore, login_required, current_user
+
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os
 
+from environment import Environment
+from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
 from models import db, User, Role, Book, CartItem
 
@@ -20,14 +21,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 app = Flask(__name__)
 
 # Retrieve environment variables
-CLIENT_ID = os.getenv('CLIENT_ID')
-KEYCLOAK_URI_SCHEME = os.getenv('KEYCLOAK_URI_SCHEME')
-KEYCLOAK_HOST = os.getenv('KEYCLOAK_HOST')
-REALM = os.getenv('KEYCLOAK_REALM')
+env = Environment()
 
-# Introspect URL
-introspect_url = f"{KEYCLOAK_URI_SCHEME}://{KEYCLOAK_HOST}/realms/{REALM}/protocol/openid-connect/token/introspect"
-validator = KeycloakValidator(introspect_url, CLIENT_ID)
+kc_url = KeycloakURLGenerator(base_url=env.KEYCLOAK_HOST, realm_name=env.REALM)
+
+validator = KeycloakValidator(kc_url.certs_url(), env.CLIENT_ID)
 
 app.config.update({
     'SQLALCHEMY_DATABASE_URI': 'sqlite:///books.db',
@@ -65,8 +63,6 @@ def verify_token():
     else:
         # Token is invalid or expired, handle accordingly
         return jsonify({'error': 'Token is invalid'}), 200
-
-
 
 
 @app.route('/api/register', methods=['POST'])
