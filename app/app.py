@@ -1,12 +1,16 @@
 import logging
+
+import requests
 from flask import Flask, jsonify, request
 from flask_security import Security, SQLAlchemyUserDatastore, login_required, current_user
+
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-import requests
 from dotenv import load_dotenv
-import os
 
+from environment import Environment
+from keycloak_url_gen import KeycloakURLGenerator
+from keycloak_validator import KeycloakValidator
 from models import db, User, Role, Book, CartItem
 
 # Load environment variables from .env file
@@ -17,11 +21,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 app = Flask(__name__)
 
 # Retrieve environment variables
-CLIENT_ID = os.getenv('CLIENT_ID')
-CLIENT_SECRET = os.getenv('CLIENT_SECRET')
-REDIRECT_URI = os.getenv('REDIRECT_URI')
-GRANT_TYPE = os.getenv('GRANT_TYPE')
-KEYCLOAK_TOKEN_ENDPOINT = os.getenv('KEYCLOAK_TOKEN_ENDPOINT')
+env = Environment()
+
+kc_url = KeycloakURLGenerator(base_url=env.KEYCLOAK_HOST, realm_name=env.REALM)
+
+validator = KeycloakValidator(kc_url.certs_url(), env.CLIENT_ID)
 
 app.config.update({
     'SQLALCHEMY_DATABASE_URI': 'sqlite:///books.db',
@@ -40,44 +44,25 @@ user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
 
-# This route handles the callback from the Flutter frontend after authentication
-@app.route('/auth/callback', methods=['POST'])
-def handle_auth_callback():
-    data = request.json
-    logging.debug(f"Callback received {data}")
-    authorization_code = data.get('code')
-    logging.debug(f"Received auth_code from Frontend: {authorization_code}")
+@app.route('/auth/check_token', methods=['POST'])
+def verify_token():
+    # Get the token from the request header
+    auth_header = request.headers.get('Authorization')
 
-    if authorization_code:
-        token_data = {
-            'grant_type': GRANT_TYPE,
-            'client_id': CLIENT_ID,
-            'client_secret': CLIENT_SECRET,
-            'redirect_uri': REDIRECT_URI,
-            'code': authorization_code
-        }
+    # Check if header exists and has the correct format
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Missing or invalid authorization header'}), 401
 
-        token_response = requests.post(KEYCLOAK_TOKEN_ENDPOINT, data=token_data)
-        logging.debug(f"Request data: {token_response.request.body}")
+    # Extract the token from the header
+    token = auth_header.split("Bearer ")[-1]
 
-        if token_response.ok:
-            token_json = token_response.json()
-            access_token = token_json.get('access_token')
-            if access_token:
-                logging.debug("Access token obtained successfully")
-                return jsonify({'access_token': access_token}), 200
-            else:
-                error_msg = "Access token not found in token response"
-                logging.error(error_msg)
-                return jsonify({'error': error_msg}), 500
-        else:
-            error_msg = f"Failed to obtain access token: {token_response.text}"
-            logging.error(error_msg)
-            return jsonify({'error': error_msg}), 500
+    logging.debug(token)
+    if validator.validate_token(token):
+        # Token is valid, proceed with your application logic
+        return jsonify({'message': 'Token is valid'}), 200
     else:
-        error_msg = "No authorization code provided"
-        logging.error(error_msg)
-        return jsonify({'error': error_msg}), 400
+        # Token is invalid or expired, handle accordingly
+        return jsonify({'error': 'Token is invalid'}), 200
 
 
 @app.route('/api/register', methods=['POST'])
