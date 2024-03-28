@@ -1,6 +1,5 @@
 import logging
 
-from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
@@ -10,9 +9,6 @@ from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
 from models import db, User, Role, Book, CartItem
-
-# Load environment variables from .env file
-load_dotenv()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -33,9 +29,6 @@ app.config.update({
 db.init_app(app)
 CORS(app)  # Enable CORS for all routes
 bcrypt = Bcrypt(app)
-
-# Create the database
-# db.create_all()
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)

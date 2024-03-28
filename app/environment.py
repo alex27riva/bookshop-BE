@@ -1,5 +1,7 @@
 import os
 
+from dotenv import load_dotenv
+
 
 class Environment:
     """
@@ -19,6 +21,7 @@ class Environment:
     Raises:
         KeyError: If a required environment variable is not found.
     """
+        load_dotenv()
         self.CLIENT_ID = os.getenv('CLIENT_ID')
         self.KEYCLOAK_URI_SCHEME = os.getenv('KEYCLOAK_URI_SCHEME')
         self.KEYCLOAK_HOST = os.getenv('KEYCLOAK_HOST')
