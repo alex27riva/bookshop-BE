@@ -1,12 +1,10 @@
 import logging
 
-import requests
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
-from flask_security import Security, SQLAlchemyUserDatastore, login_required, current_user
-
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-from dotenv import load_dotenv
+from flask_security import Security, SQLAlchemyUserDatastore, login_required, current_user
 
 from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
@@ -178,4 +176,19 @@ def add_to_cart():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
+        book_data = [
+            ('1984', 'George Orwell', 'https://www.bookerworm.com/images/1984.jpg'),
+            ('Brave New World', 'Aldous Huxley',
+             'https://upload.wikimedia.org/wikipedia/en/6/62/BraveNewWorld_FirstEdition.jpg'),
+        ]
+
+        for title, author, cover_image_url in book_data:
+            # Check if book already exists
+            if not Book.query.filter(Book.title == title).scalar():
+                # Create and add book if not found
+                book = Book(title=title, author=author, cover_image_url=cover_image_url)
+                db.session.add(book)
+        db.session.commit()
+
     app.run(debug=True)
