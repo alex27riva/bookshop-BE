@@ -18,14 +18,16 @@ class KeycloakValidator:
         self.public_key = self._get_public_key()
 
     def _get_public_key(self):
-        response = requests.get(self.certs_url)
-        keys = response.json()["keys"]
-        print(keys)
-        selected_key = next((key for key in keys if key['kid'] == target_kid), None)
-        if selected_key:
-            logging.debug(f"Selected key: {selected_key}")
-            return selected_key
-        return None
+        try:
+            response = requests.get(self.certs_url)
+            keys = response.json()["keys"]
+            selected_key = next((key for key in keys if key['kid'] == target_kid), None)
+            if selected_key:
+                logging.debug(f"Selected key: {selected_key}")
+                return selected_key
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Can't connect to {self.certs_url}")
+            return None
 
     def validate_token(self, token):
         try:
