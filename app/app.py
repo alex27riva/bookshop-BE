@@ -1,14 +1,12 @@
 import logging
 
 from flask import Flask, jsonify, request
-from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-from flask_security import Security, SQLAlchemyUserDatastore, login_required, current_user
 
 from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
-from models import db, User, Role, Book, CartItem
+from models import db, Book, CartItem
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -28,11 +26,6 @@ app.config.update({
 })
 db.init_app(app)
 CORS(app)  # Enable CORS for all routes
-bcrypt = Bcrypt(app)
-
-# Setup Flask-Security
-user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore)
 
 
 @app.route('/auth/check_token', methods=['POST'])
@@ -56,46 +49,10 @@ def verify_token():
         return jsonify({'error': 'Token is invalid'}), 200
 
 
-@app.route('/api/register', methods=['POST'])
-def register():
-    data = request.json
-    email = data.get('email')
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
-    password = data.get('password')
-
-    # Check if the user already exists
-    existing_user = user_datastore.find_user(email=email)
-    if existing_user:
-        return jsonify({"error": "User with this email already exists"}), 400
-
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-
-    new_user = user_datastore.create_user(email=email, first_name=first_name, last_name=last_name,
-                                          password=hashed_password, active=True)
-    db.session.commit()
-
-    return jsonify({"message": "User registered successfully"})
-
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
-
-    user = user_datastore.find_user(email=email)
-
-    if user and bcrypt.check_password_hash(user.password, password):
-        return jsonify({"message": "Login successful"})
-    else:
-        return jsonify({"error": "Invalid email or password"}), 401
-
-
 @app.route('/api/profile', methods=['GET'])
-@login_required
 def profile():
-    return jsonify({"email": current_user.email, "roles": [role.name for role in current_user.roles]})
+    email = "email_from_token"
+    return jsonify({"email": email})
 
 
 @app.route('/api/books', methods=['GET'])
@@ -127,7 +84,6 @@ def get_cart_items():
 
 # Define your route for adding a book to the cart
 @app.route('/api/add_to_cart', methods=['POST'])
-@login_required  # Ensure user is authenticated via Keycloak OAuth
 def add_to_cart():
     # Get data from request
     data = request.json
@@ -143,9 +99,9 @@ def add_to_cart():
         return jsonify({'error': 'Book not found'}), 404
 
     # Create a new cart item for the current user
-    cart_item = CartItem(book_id=book_id, user_id=current_user.id)
-    db.session.add(cart_item)
-    db.session.commit()
+    # cart_item = CartItem(book_id=book_id, user_id=current_user.id)
+    # db.session.add(cart_item)
+    # db.session.commit()
 
     return jsonify({'message': 'Book added to cart successfully'}), 200
 

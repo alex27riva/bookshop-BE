@@ -1,7 +1,5 @@
 Flask
 Flask-SQLAlchemy
-flask-security-too
-flask-bcrypt
 setuptools
 flask-cors
 python-dotenv
