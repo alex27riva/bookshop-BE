@@ -3,6 +3,7 @@ import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from sample_data import book_data
 from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
@@ -83,7 +84,7 @@ def get_cart_items():
 
 
 # Define your route for adding a book to the cart
-@app.route('/api/add_to_cart', methods=['POST'])
+@app.route('/api/cart/add', methods=['POST'])
 def add_to_cart():
     # Get data from request
     data = request.json
@@ -106,32 +107,9 @@ def add_to_cart():
     return jsonify({'message': 'Book added to cart successfully'}), 200
 
 
-# @app.route('/api/cart', methods=['POST'])
-# @login_required
-# def add_to_cart():
-#     data = request.json
-#     book_id = data.get('book_id')
-#     book = Book.query.get(book_id)
-#
-#     if book:
-#         cart_item = CartItem(book=book)
-#         db.session.add(cart_item)
-#         db.session.commit()
-#         return jsonify({"message": "Book added to the cart"})
-#     else:
-#         return jsonify({"error": "Book not found"}), 404
-
-
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-
-        book_data = [
-            ('1984', 'George Orwell', 'https://www.bookerworm.com/images/1984.jpg'),
-            ('Brave New World', 'Aldous Huxley',
-             'https://upload.wikimedia.org/wikipedia/en/6/62/BraveNewWorld_FirstEdition.jpg'),
-        ]
-
         for title, author, cover_image_url in book_data:
             # Check if book already exists
             if not Book.query.filter(Book.title == title).scalar():
