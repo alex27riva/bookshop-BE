@@ -22,23 +22,28 @@ class KeycloakValidator:
 
     def __init__(self, kc_url, client_id):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.kc_url_gen = kc_url
+        self.realm_url = kc_url.realm_url()
         self.client_id = client_id
-        self.public_key = self._get_public_key()
+        self.public_key = ""
+        self._get_public_key()
 
     def _get_public_key(self) -> str:
         try:
-            response = requests.get(self.kc_url_gen.realm_url())
+            response = requests.get(self.realm_url)
             public_key = response.json()['public_key']
             public_key_pem = f"-----BEGIN PUBLIC KEY-----\n{public_key}\n-----END PUBLIC KEY-----"
+            self.public_key = public_key_pem
             return public_key_pem
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"Can't connect to {self.kc_url_gen.realm_url()}")
+            logging.error(f"Can't connect to {self.realm_url}")
             return ""
 
     def validate_token(self, token) -> bool:
         try:
+            if self.public_key == "":
+                self._get_public_key()
+
             decoded_token = jwt.decode(token, self.public_key, algorithms=['RS256'], audience='account')
             logging.debug(f"Decoded token {decoded_token}")
             return True

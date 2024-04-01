@@ -43,10 +43,8 @@ def verify_token():
 
     logging.debug(token)
     if validator.validate_token(token):
-        # Token is valid, proceed with your application logic
         return jsonify({'message': 'Token is valid'}), 200
     else:
-        # Token is invalid or expired, handle accordingly
         return jsonify({'error': 'Token is invalid'}), 200
 
 
