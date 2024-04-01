@@ -67,8 +67,7 @@ def profile():
 
 
 @app.route('/api/books', methods=['GET'])
-@jwt_required
-def get_books(email):
+def get_books():
     books = Book.query.all()
     book_list = [{"id": book.id, "title": book.title, "author": book.author, "cover_image_url": book.cover_image_url}
                  for book in books]
