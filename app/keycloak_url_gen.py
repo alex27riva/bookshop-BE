@@ -16,5 +16,8 @@ class KeycloakURLGenerator:
     def certs_url(self):
         return self._build_url("protocol", "openid-connect", "certs")
 
+    def realm_url(self):
+        return self._build_url()
+
     def logout_url(self):
         return self._build_url("protocol", "openid-connect", "logout")

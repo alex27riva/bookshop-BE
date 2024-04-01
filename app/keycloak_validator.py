@@ -7,31 +7,41 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-target_kid = 'mqp6ifE0E7ArXObW_1Cpshk8lwktc3Wklhk8UDlypPE'
-
 
 class KeycloakValidator:
-    def __init__(self, certs_url, client_id):
+    """
+   This class validates tokens issued by a Keycloak server.
+
+   It retrieves the public key from the Keycloak server and uses it to
+   validate the token signature.
+
+   Args:
+       kc_url (KeycloakURLGenerator): Helper class to generate Keycloak URLs.
+       client_id (str): The client ID of the application that issued the token.
+       """
+
+    def __init__(self, kc_url, client_id):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.certs_url = certs_url
+        self.kc_url_gen = kc_url
         self.client_id = client_id
         self.public_key = self._get_public_key()
 
-    def _get_public_key(self):
+    def _get_public_key(self) -> str:
         try:
-            response = requests.get(self.certs_url)
-            keys = response.json()["keys"]
-            selected_key = next((key for key in keys if key['kid'] == target_kid), None)
-            if selected_key:
-                logging.debug(f"Selected key: {selected_key}")
-                return selected_key
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Can't connect to {self.certs_url}")
-            return None
+            response = requests.get(self.kc_url_gen.realm_url())
+            public_key = response.json()['public_key']
+            public_key_pem = f"-----BEGIN PUBLIC KEY-----\n{public_key}\n-----END PUBLIC KEY-----"
+            return public_key_pem
 
-    def validate_token(self, token):
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Can't connect to {self.kc_url_gen.realm_url()}")
+            return ""
+
+    def validate_token(self, token) -> bool:
         try:
-            decoded_token = jwt.decode(token, self.public_key, algorithms=['RS256'])
-            print(decoded_token)
+            decoded_token = jwt.decode(token, self.public_key, algorithms=['RS256'], audience='account')
+            logging.debug(f"Decoded token {decoded_token}")
+            return True
         except Exception as e:
             logging.error(f"Error decoding token: {e}")
+            return False

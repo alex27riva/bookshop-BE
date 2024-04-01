@@ -18,7 +18,7 @@ env = Environment()
 
 kc_url = KeycloakURLGenerator(base_url=env.KEYCLOAK_HOST, realm_name=env.REALM)
 
-validator = KeycloakValidator(kc_url.certs_url(), env.CLIENT_ID)
+validator = KeycloakValidator(kc_url, env.CLIENT_ID)
 
 app.config.update({
     'SQLALCHEMY_DATABASE_URI': 'sqlite:///books.db',
