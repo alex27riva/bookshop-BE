@@ -24,10 +24,9 @@ class KeycloakValidator:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.realm_url = kc_url.realm_url()
         self.client_id = client_id
-        self.public_key = ""
-        self._get_public_key()
+        self.public_key = self.get_public_key()
 
-    def _get_public_key(self) -> str:
+    def get_public_key(self) -> str:
         try:
             response = requests.get(self.realm_url)
             public_key = response.json()['public_key']
@@ -39,14 +38,18 @@ class KeycloakValidator:
             logging.error(f"Can't connect to {self.realm_url}")
             return ""
 
-    def validate_token(self, token) -> bool:
+    def validate_token(self, token):
         try:
+            # Retry getting public key
             if self.public_key == "":
-                self._get_public_key()
+                self.get_public_key()
 
+            # Decode token on if is valid
             decoded_token = jwt.decode(token, self.public_key, algorithms=['RS256'], audience='account')
+            email = decoded_token['email']
             logging.debug(f"Decoded token {decoded_token}")
-            return True
+            logging.info(f"User email: {email}")
+            return email
         except Exception as e:
             logging.error(f"Error decoding token: {e}")
-            return False
+            return None

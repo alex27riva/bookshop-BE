@@ -4,4 +4,4 @@ setuptools
 flask-cors
 python-dotenv
 requests
-PyJWT
+pyjwt[crypto]

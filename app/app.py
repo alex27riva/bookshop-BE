@@ -8,6 +8,7 @@ from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
 from models import db, Book, CartItem
+from functools import wraps
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -29,23 +30,34 @@ db.init_app(app)
 CORS(app)  # Enable CORS for all routes
 
 
+def jwt_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # Get the token from the request header
+        auth_header = request.headers.get('Authorization')
+
+        # Check if header exists and has the correct format
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid authorization header'}), 401
+
+        # Extract the token from the header
+        token = auth_header.split("Bearer ")[-1]
+
+        # Return user email
+        result = validator.validate_token(token)
+
+        if result:
+            return func(result, *args, **kwargs)
+        else:
+            return jsonify({'error': 'Invalid token'}), 403  # Forbidden
+
+    return wrapper
+
+
 @app.route('/auth/check_token', methods=['POST'])
-def verify_token():
-    # Get the token from the request header
-    auth_header = request.headers.get('Authorization')
-
-    # Check if header exists and has the correct format
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({'error': 'Missing or invalid authorization header'}), 401
-
-    # Extract the token from the header
-    token = auth_header.split("Bearer ")[-1]
-
-    logging.debug(token)
-    if validator.validate_token(token):
-        return jsonify({'message': 'Token is valid'}), 200
-    else:
-        return jsonify({'error': 'Token is invalid'}), 200
+@jwt_required
+def verify_token(email):
+    return jsonify({'email': email}), 200
 
 
 @app.route('/api/profile', methods=['GET'])
@@ -55,7 +67,8 @@ def profile():
 
 
 @app.route('/api/books', methods=['GET'])
-def get_books():
+@jwt_required
+def get_books(email):
     books = Book.query.all()
     book_list = [{"id": book.id, "title": book.title, "author": book.author, "cover_image_url": book.cover_image_url}
                  for book in books]
