@@ -60,6 +60,18 @@ def verify_token(email):
     return jsonify({'email': email}), 200
 
 
+@app.route('/api/signup', methods=['POST'])
+@jwt_required
+def create_account(email):
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "User already registered"}), 400
+
+    new_user = User(email=email)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'User registered successfully.'}), 201
+
+
 @app.route('/api/profile', methods=['GET'])
 def profile():
     email = "email_from_token"
@@ -154,8 +166,8 @@ if __name__ == '__main__':
             # Check if book already exists
             if not Book.query.filter(Book.title == title).scalar():
                 # Create and add book if not found
-                book = Book(title=title, author=author, cover_image_url=cover_image_url)
-                db.session.add(book)
+                book_to_add = Book(title=title, author=author, cover_image_url=cover_image_url)
+                db.session.add(book_to_add)
         db.session.commit()
 
     app.run(debug=True)
