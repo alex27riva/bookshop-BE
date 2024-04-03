@@ -17,8 +17,17 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     author = db.Column(db.String(255), nullable=False)
-    price = db.Column(db.Integer)
+    price = db.Column(db.Double)
     cover_image_url = db.Column(db.String(255))
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "author": self.author,
+            "price": self.price,
+            "cover_image_url": self.cover_image_url
+        }
 
 
 # Define the CartItem model

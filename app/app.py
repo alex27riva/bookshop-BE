@@ -69,8 +69,7 @@ def profile():
 @app.route('/api/books', methods=['GET'])
 def get_books():
     books = Book.query.all()
-    book_list = [{"id": book.id, "title": book.title, "author": book.author, "price": book.price, "cover_image_url": book.cover_image_url}
-                 for book in books]
+    book_list = [book.to_json() for book in books]
     return jsonify(book_list)
 
 
@@ -78,8 +77,7 @@ def get_books():
 def get_book(book_id):
     book = Book.query.get(book_id)
     if book:
-        return jsonify(
-            {"id": book.id, "title": book.title, "author": book.author, "cover_image_url": book.cover_image_url})
+        return jsonify(book.to_json())
     else:
         return jsonify({"error": "Book not found"}), 404
 
