@@ -7,7 +7,7 @@ from sample_data import book_data
 from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
-from models import db, Book, CartItem
+from models import db, Book, CartItem, User, WishlistItem
 from functools import wraps
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -69,7 +69,7 @@ def profile():
 @app.route('/api/books', methods=['GET'])
 def get_books():
     books = Book.query.all()
-    book_list = [{"id": book.id, "title": book.title, "author": book.author, "cover_image_url": book.cover_image_url}
+    book_list = [{"id": book.id, "title": book.title, "author": book.author, "price": book.price, "cover_image_url": book.cover_image_url}
                  for book in books]
     return jsonify(book_list)
 
@@ -115,6 +115,38 @@ def add_to_cart():
     # db.session.commit()
 
     return jsonify({'message': 'Book added to cart successfully'}), 200
+
+
+@app.route('/api/wishlist/add', methods=['POST'])
+def add_to_wishlist():
+    data = request.json
+    user_id = data.get('user_id')
+    book_id = data.get('book_id')
+
+    # Check if both user_id and book_id are provided
+    if user_id is None or book_id is None:
+        return jsonify({'message': 'Both user_id and book_id are required.'}), 400
+
+    # Check if user and book exist
+    user = User.query.get(user_id)
+    book = Book.query.get(book_id)
+
+    if user is None:
+        return jsonify({'message': f'User with id {user_id} not found.'}), 404
+
+    if book is None:
+        return jsonify({'message': f'Book with id {book_id} not found.'}), 404
+
+    # Check if the book is already in the user's wishlist
+    if WishlistItem.query.filter_by(user_id=user_id, book_id=book_id).first():
+        return jsonify({'message': 'This book is already in the wishlist.'}), 400
+
+    # Add the book to the user's wishlist
+    wishlist_item = WishlistItem(user_id=user_id, book_id=book_id)
+    db.session.add(wishlist_item)
+    db.session.commit()
+
+    return jsonify({'message': 'Book added to wishlist successfully.'}), 201
 
 
 if __name__ == '__main__':

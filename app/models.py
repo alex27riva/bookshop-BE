@@ -3,11 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
-class Role(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), unique=True)
-
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(255))
@@ -22,6 +17,7 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     author = db.Column(db.String(255), nullable=False)
+    price = db.Column(db.Integer)
     cover_image_url = db.Column(db.String(255))
 
 
@@ -32,3 +28,11 @@ class CartItem(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     book = db.relationship('Book', backref=db.backref('cart_items', lazy=True))
     user = db.relationship('User', backref=db.backref('cart_items', lazy=True))
+
+
+class WishlistItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    book = db.relationship('Book', backref=db.backref('wishlist_items', lazy=True))
+    user = db.relationship('User', backref=db.backref('wishlist_items', lazy=True))
