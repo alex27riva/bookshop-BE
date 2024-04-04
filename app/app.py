@@ -73,8 +73,8 @@ def create_account(email):
 
 
 @app.route('/api/profile', methods=['GET'])
-def profile():
-    email = "email_from_token"
+@jwt_required
+def profile(email):
     return jsonify({"email": email})
 
 
@@ -127,22 +127,23 @@ def add_to_cart():
     return jsonify({'message': 'Book added to cart successfully'}), 200
 
 
-@app.route('/api/wishlist/add', methods=['POST'])
-def add_to_wishlist():
+@app.route('/api/wishlist', methods=['POST'])
+@jwt_required
+def add_to_wishlist(email):
     data = request.json
-    user_id = data.get('user_id')
+
+    db_user = User.query.filter_by(email=email).first()
+    if db_user is None:
+        return jsonify({'message': 'User not in the database'}), 404
+    user_id = db_user.id
     book_id = data.get('book_id')
 
     # Check if both user_id and book_id are provided
     if user_id is None or book_id is None:
         return jsonify({'message': 'Both user_id and book_id are required.'}), 400
 
-    # Check if user and book exist
-    user = User.query.get(user_id)
+    # Check if book exist
     book = Book.query.get(book_id)
-
-    if user is None:
-        return jsonify({'message': f'User with id {user_id} not found.'}), 404
 
     if book is None:
         return jsonify({'message': f'Book with id {book_id} not found.'}), 404
@@ -157,6 +158,37 @@ def add_to_wishlist():
     db.session.commit()
 
     return jsonify({'message': 'Book added to wishlist successfully.'}), 201
+
+
+@app.route('/api/wishlist/<int:book_id>', methods=['DELETE'])
+@jwt_required
+def remove_from_wishlist(email, book_id):
+
+    db_user = User.query.filter_by(email=email).first()
+    if db_user is None:
+        return jsonify({'message': 'User not in the database'}), 404
+    user_id = db_user.id
+
+    # Check if both user_id and book_id are provided
+    if user_id is None or book_id is None:
+        return jsonify({'message': 'Both user_id and book_id are required.'}), 400
+
+    # Check if book exist
+    book = Book.query.get(book_id)
+
+    if book is None:
+        return jsonify({'message': f'Book with id {book_id} not found.'}), 404
+
+    # Check if the book is already in the user's wishlist
+    wishlist_item = WishlistItem.query.filter_by(user_id=user_id, book_id=book_id).first()
+    if wishlist_item is None:
+        return jsonify({'message': 'This book is not in your wishlist.'}), 400
+
+    # Remove the book from wishlist
+    db.session.delete(wishlist_item)
+    db.session.commit()
+
+    return jsonify({'message': 'Book removed from wishlist successfully.'}), 201
 
 
 if __name__ == '__main__':
