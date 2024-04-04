@@ -49,7 +49,7 @@ def jwt_required(func):
         if result:
             return func(result, *args, **kwargs)
         else:
-            return jsonify({'error': 'Invalid token'}), 403  # Forbidden
+            return jsonify({'message': 'Invalid token'}), 403  # Forbidden
 
     return wrapper
 
@@ -65,11 +65,13 @@ def verify_token(tokeninfo):
 def create_account(tokeninfo):
     email = tokeninfo.email
     if User.query.filter_by(email=email).first():
-        return jsonify({"error": "User already registered"}), 400
+        logging.debug(f"Account for {email} already exists")
+        return jsonify({"message": "User already registered"}), 400
 
     new_user = User(email=email)
     db.session.add(new_user)
     db.session.commit()
+    logging.debug(f"Account created for {email}")
     return jsonify({'message': 'User registered successfully.'}), 201
 
 
@@ -92,7 +94,7 @@ def get_book(book_id):
     if book:
         return jsonify(book.to_json())
     else:
-        return jsonify({"error": "Book not found"}), 404
+        return jsonify({"message": "Book not found"}), 404
 
 
 @app.route('/api/cart', methods=['GET'])
@@ -113,12 +115,12 @@ def add_to_cart():
 
     # Check if book_id is provided
     if not book_id:
-        return jsonify({'error': 'Book ID is required'}), 400
+        return jsonify({'message': 'Book ID is required'}), 400
 
     # Check if the book exists
     book = Book.query.get(book_id)
     if not book:
-        return jsonify({'error': 'Book not found'}), 404
+        return jsonify({'message': 'Book not found'}), 404
 
     # Create a new cart item for the current user
     # cart_item = CartItem(book_id=book_id, user_id=current_user.id)
@@ -142,6 +144,7 @@ def add_to_wishlist(tokeninfo):
 
     # Check if both user_id and book_id are provided
     if user_id is None or book_id is None:
+        logging.debug(f"User_id and book_id are required, {user_id}, {book_id}")
         return jsonify({'message': 'Both user_id and book_id are required.'}), 400
 
     # Check if book exist
@@ -158,7 +161,7 @@ def add_to_wishlist(tokeninfo):
     wishlist_item = WishlistItem(user_id=user_id, book_id=book_id)
     db.session.add(wishlist_item)
     db.session.commit()
-
+    logging.debug(f"Book id {book_id} added wishlist")
     return jsonify({'message': 'Book added to wishlist successfully.'}), 201
 
 
@@ -190,7 +193,7 @@ def remove_from_wishlist(tokeninfo, book_id):
     # Remove the book from wishlist
     db.session.delete(wishlist_item)
     db.session.commit()
-
+    logging.debug(f"Book id {book_id} removed from wishlist.")
     return jsonify({'message': 'Book removed from wishlist successfully.'}), 201
 
 

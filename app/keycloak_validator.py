@@ -1,8 +1,6 @@
 import requests
 import logging
 import jwt
-
-from app.token_info import TokenInfo
 from token_info import TokenInfo
 
 logging.basicConfig(
