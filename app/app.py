@@ -130,9 +130,60 @@ def add_to_cart():
     return jsonify({'message': 'Book added to cart successfully'}), 200
 
 
+@app.route('/api/wishlist', methods=['GET'])
+@jwt_required
+def get_wishlist(tokeninfo):
+    """Retrieves all books in the user's wishlist.
+
+    This method retrieves user information from the token, fetches all wishlist items associated with the user,
+    and builds a list of corresponding book objects. It handles the case of an empty wishlist and returns
+    an appropriate success message.
+
+    Args:
+        tokeninfo: Decoded JWT token information containing the user's email.
+
+    Returns:
+        JSON response with a list of JSON books in the wishlist (200 OK) or an empty list message (200 OK)
+        if the wishlist is empty. Error message is returned for user not found (404 Not Found).
+        """
+    email = tokeninfo.email
+    db_user = User.query.filter_by(email=email).first()
+    if db_user is None:
+        return jsonify({'message': 'User not in the database'}), 404
+    user_id = db_user.id
+
+    # Get all wishlist items for the user
+    wishlist_items = WishlistItem.query.filter_by(user_id=user_id).all()
+
+    # Check if wishlist is empty
+    if not wishlist_items:
+        return jsonify({'wishlist': []}), 200  # Success with empty list
+
+    # Build a list of book objects from wishlist items
+    books = []
+    for item in wishlist_items:
+        book = Book.query.get(item.book_id)
+        if book:
+            books.append(book.to_json())  # Assuming a method to convert Book object to dict
+
+    return jsonify({'wishlist': books}), 200
+
+
 @app.route('/api/wishlist', methods=['POST'])
 @jwt_required
 def add_to_wishlist(tokeninfo):
+    """Adds a book to the user's wishlist.
+
+    This method retrieves user information from the token, extracts the book ID from the request body,
+    checks for book existence and prevents duplicate entries. If all checks pass, it adds a new
+    WishlistItem object to the database.
+
+    Args:
+        tokeninfo: Decoded JWT token information containing the user's email.
+
+    Returns:
+        JSON response with a success message (201 Created) or error messages (400 Bad Request, 404 Not Found).
+    """
     email = tokeninfo.email
     data = request.json
 
