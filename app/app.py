@@ -251,11 +251,11 @@ def remove_from_wishlist(tokeninfo, book_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        for title, author, cover_image_url in book_data:
+        for title, author, price, cover_image_url in book_data:
             # Check if book already exists
             if not Book.query.filter(Book.title == title).scalar():
                 # Create and add book if not found
-                book_to_add = Book(title=title, author=author, cover_image_url=cover_image_url)
+                book_to_add = Book(title=title, author=author, price=price, cover_image_url=cover_image_url)
                 db.session.add(book_to_add)
         db.session.commit()
 
