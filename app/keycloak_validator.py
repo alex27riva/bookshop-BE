@@ -2,6 +2,9 @@ import requests
 import logging
 import jwt
 
+from app.token_info import TokenInfo
+from token_info import TokenInfo
+
 logging.basicConfig(
     level=logging.DEBUG,  # Set the logging level
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -38,7 +41,7 @@ class KeycloakValidator:
             logging.error(f"Can't connect to {self.realm_url}")
             return ""
 
-    def validate_token(self, token):
+    def validate_token(self, token) -> TokenInfo | None:
         try:
             # Retry getting public key
             if self.public_key == "":
@@ -46,10 +49,8 @@ class KeycloakValidator:
 
             # Decode token on if is valid
             decoded_token = jwt.decode(token, self.public_key, algorithms=['RS256'], audience='account')
-            email = decoded_token['email']
             logging.debug(f"Decoded token {decoded_token}")
-            logging.info(f"User email: {email}")
-            return email
+            return TokenInfo(decoded_token)
         except Exception as e:
             logging.error(f"Error decoding token: {e}")
             return None

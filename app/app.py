@@ -43,7 +43,7 @@ def jwt_required(func):
         # Extract the token from the header
         token = auth_header.split("Bearer ")[-1]
 
-        # Return user email
+        # Return TokenInfo
         result = validator.validate_token(token)
 
         if result:
@@ -56,13 +56,14 @@ def jwt_required(func):
 
 @app.route('/auth/check_token', methods=['POST'])
 @jwt_required
-def verify_token(email):
-    return jsonify({'email': email}), 200
+def verify_token(tokeninfo):
+    return jsonify({'email': tokeninfo.email}), 200
 
 
 @app.route('/api/signup', methods=['POST'])
 @jwt_required
-def create_account(email):
+def create_account(tokeninfo):
+    email = tokeninfo.email
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "User already registered"}), 400
 
@@ -74,8 +75,8 @@ def create_account(email):
 
 @app.route('/api/profile', methods=['GET'])
 @jwt_required
-def profile(email):
-    return jsonify({"email": email})
+def profile(tokeninfo):
+    return jsonify({"email": tokeninfo.email})
 
 
 @app.route('/api/books', methods=['GET'])
@@ -129,7 +130,8 @@ def add_to_cart():
 
 @app.route('/api/wishlist', methods=['POST'])
 @jwt_required
-def add_to_wishlist(email):
+def add_to_wishlist(tokeninfo):
+    email = tokeninfo.email
     data = request.json
 
     db_user = User.query.filter_by(email=email).first()
@@ -162,7 +164,8 @@ def add_to_wishlist(email):
 
 @app.route('/api/wishlist/<int:book_id>', methods=['DELETE'])
 @jwt_required
-def remove_from_wishlist(email, book_id):
+def remove_from_wishlist(tokeninfo, book_id):
+    email = tokeninfo.email
 
     db_user = User.query.filter_by(email=email).first()
     if db_user is None:
