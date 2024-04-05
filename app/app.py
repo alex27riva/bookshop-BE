@@ -7,7 +7,7 @@ from sample_data import book_data
 from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
-from models import db, Book, CartItem, User, WishlistItem
+from models import db, Book, CartItem, User, Wishlist
 from functools import wraps
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -153,7 +153,7 @@ def get_wishlist(tokeninfo):
     user_id = db_user.id
 
     # Get all wishlist items for the user
-    wishlist_items = WishlistItem.query.filter_by(user_id=user_id).all()
+    wishlist_items = Wishlist.query.filter_by(user_id=user_id).all()
 
     # Check if wishlist is empty
     if not wishlist_items:
@@ -205,11 +205,11 @@ def add_to_wishlist(tokeninfo):
         return jsonify({'message': f'Book with id {book_id} not found.'}), 404
 
     # Check if the book is already in the user's wishlist
-    if WishlistItem.query.filter_by(user_id=user_id, book_id=book_id).first():
+    if Wishlist.query.filter_by(user_id=user_id, book_id=book_id).first():
         return jsonify({'message': 'This book is already in the wishlist.'}), 400
 
     # Add the book to the user's wishlist
-    wishlist_item = WishlistItem(user_id=user_id, book_id=book_id)
+    wishlist_item = Wishlist(user_id=user_id, book_id=book_id)
     db.session.add(wishlist_item)
     db.session.commit()
     logging.debug(f"Book id {book_id} added wishlist")
@@ -237,7 +237,7 @@ def remove_from_wishlist(tokeninfo, book_id):
         return jsonify({'message': f'Book with id {book_id} not found.'}), 404
 
     # Check if the book is already in the user's wishlist
-    wishlist_item = WishlistItem.query.filter_by(user_id=user_id, book_id=book_id).first()
+    wishlist_item = Wishlist.query.filter_by(user_id=user_id, book_id=book_id).first()
     if wishlist_item is None:
         return jsonify({'message': 'This book is not in your wishlist.'}), 400
 

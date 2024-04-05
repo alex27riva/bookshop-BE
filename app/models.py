@@ -39,7 +39,7 @@ class CartItem(db.Model):
     user = db.relationship('User', backref=db.backref('cart_items', lazy=True))
 
 
-class WishlistItem(db.Model):
+class Wishlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
