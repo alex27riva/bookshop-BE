@@ -77,8 +77,28 @@ def create_account(tokeninfo):
 
 @app.route('/api/profile', methods=['GET'])
 @jwt_required
-def profile(tokeninfo):
-    return jsonify({"email": tokeninfo.email})
+def get_profile(tokeninfo):
+    user = User.query.filter_by(email=tokeninfo.email).first()
+    if user:
+        return jsonify(user.to_json()), 200
+    return jsonify({"message": "User profile not found"}), 404
+
+
+@app.route('/api/profile/picture', methods=['PUT'])
+@jwt_required
+def update_profile_picture(token):
+    new_url = request.json.get('profile_pic_url')
+    if not new_url:
+        return jsonify({'message': 'Please provide a profile picture URL'}), 400
+
+    user = User.query.filter_by(email=token.email).first()
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    user.profile_pic_url = new_url
+    db.session.commit()
+    logging.debug(f"Updated profile pic for {token.email} to {new_url}")
+    return jsonify({'message': 'Profile picture URL updated successfully'}), 200
 
 
 @app.route('/api/books', methods=['GET'])

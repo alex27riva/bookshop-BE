@@ -9,7 +9,16 @@ class User(db.Model):
     last_name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
-    active = db.Column(db.Boolean)
+    profile_pic_url = db.Column(db.String)
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.first_name,
+            "surname": self.last_name,
+            "email": self.email,
+            "profile_pic_url": self.profile_pic_url
+        }
 
 
 # Define the Book model
