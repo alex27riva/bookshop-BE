@@ -12,7 +12,8 @@ class TokenInfo:
         """
 
         self.decoded_token = decoded_token
-        self.name = self.get('name')
+        self.name = self.get('given_name')
+        self.surname = self.get('family_name')
         self.email = self.get('email')
 
     def get(self, key) -> str:

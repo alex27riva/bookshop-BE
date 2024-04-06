@@ -68,7 +68,7 @@ def create_account(tokeninfo):
         logging.debug(f"Account for {email} already exists")
         return jsonify({"message": "User already registered"}), 400
 
-    new_user = User(email=email)
+    new_user = User(name=tokeninfo.name, surname=tokeninfo.surname, email=email)
     db.session.add(new_user)
     db.session.commit()
     logging.debug(f"Account created for {email}")
@@ -157,6 +157,7 @@ def get_wishlist(tokeninfo):
 
     # Check if wishlist is empty
     if not wishlist_items:
+        logging.debug("Wishlist is empty")
         return jsonify({'wishlist': []}), 200  # Success with empty list
 
     # Build a list of book objects from wishlist items
@@ -234,6 +235,7 @@ def remove_from_wishlist(tokeninfo, book_id):
     book = Book.query.get(book_id)
 
     if book is None:
+        logging.debug(f"Book id {book_id} not found")
         return jsonify({'message': f'Book with id {book_id} not found.'}), 404
 
     # Check if the book is already in the user's wishlist
