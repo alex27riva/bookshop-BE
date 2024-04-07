@@ -43,7 +43,7 @@ def jwt_required(func):
         # Extract the token from the header
         token = auth_header.split("Bearer ")[-1]
 
-        # Return TokenInfo
+        # Return TokenInfo object
         result = validator.validate_token(token)
 
         if result:
@@ -54,21 +54,15 @@ def jwt_required(func):
     return wrapper
 
 
-@app.route('/auth/check_token', methods=['POST'])
-@jwt_required
-def verify_token(tokeninfo):
-    return jsonify({'email': tokeninfo.email}), 200
-
-
 @app.route('/api/signup', methods=['POST'])
 @jwt_required
-def create_account(tokeninfo):
-    email = tokeninfo.email
+def create_account(token):
+    email = token.email
     if User.query.filter_by(email=email).first():
         logging.debug(f"Account for {email} already exists")
         return jsonify({"message": "User already registered"}), 400
 
-    new_user = User(name=tokeninfo.name, surname=tokeninfo.surname, email=email)
+    new_user = User(name=token.name, surname=token.surname, email=email)
     db.session.add(new_user)
     db.session.commit()
     logging.debug(f"Account created for {email}")
@@ -77,8 +71,8 @@ def create_account(tokeninfo):
 
 @app.route('/api/profile', methods=['GET'])
 @jwt_required
-def get_profile(tokeninfo):
-    user = User.query.filter_by(email=tokeninfo.email).first()
+def get_profile(token):
+    user = User.query.filter_by(email=token.email).first()
     if user:
         return jsonify(user.to_json()), 200
     return jsonify({"message": "User profile not found"}), 404
@@ -152,7 +146,7 @@ def add_to_cart():
 
 @app.route('/api/wishlist', methods=['GET'])
 @jwt_required
-def get_wishlist(tokeninfo):
+def get_wishlist(token):
     """Retrieves all books in the user's wishlist.
 
     This method retrieves user information from the token, fetches all wishlist items associated with the user,
@@ -160,13 +154,13 @@ def get_wishlist(tokeninfo):
     an appropriate success message.
 
     Args:
-        tokeninfo: Decoded JWT token information containing the user's email.
+        token: Decoded JWT token information containing the user's email.
 
     Returns:
         JSON response with a list of JSON books in the wishlist (200 OK) or an empty list message (200 OK)
         if the wishlist is empty. Error message is returned for user not found (404 Not Found).
         """
-    email = tokeninfo.email
+    email = token.email
     db_user = User.query.filter_by(email=email).first()
     if db_user is None:
         return jsonify({'message': 'User not in the database'}), 404
@@ -192,7 +186,7 @@ def get_wishlist(tokeninfo):
 
 @app.route('/api/wishlist', methods=['POST'])
 @jwt_required
-def add_to_wishlist(tokeninfo):
+def add_to_wishlist(token):
     """Adds a book to the user's wishlist.
 
     This method retrieves user information from the token, extracts the book ID from the request body,
@@ -200,12 +194,12 @@ def add_to_wishlist(tokeninfo):
     WishlistItem object to the database.
 
     Args:
-        tokeninfo: Decoded JWT token information containing the user's email.
+        token: Decoded JWT token information containing the user's email.
 
     Returns:
         JSON response with a success message (201 Created) or error messages (400 Bad Request, 404 Not Found).
     """
-    email = tokeninfo.email
+    email = token.email
     data = request.json
 
     db_user = User.query.filter_by(email=email).first()
@@ -239,8 +233,8 @@ def add_to_wishlist(tokeninfo):
 
 @app.route('/api/wishlist/<int:book_id>', methods=['DELETE'])
 @jwt_required
-def remove_from_wishlist(tokeninfo, book_id):
-    email = tokeninfo.email
+def remove_from_wishlist(token, book_id):
+    email = token.email
 
     db_user = User.query.filter_by(email=email).first()
     if db_user is None:
