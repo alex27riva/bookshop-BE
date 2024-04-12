@@ -7,7 +7,7 @@ from sample_data import book_data
 from environment import Environment
 from keycloak_url_gen import KeycloakURLGenerator
 from keycloak_validator import KeycloakValidator
-from models import db, Book, CartItem, User, Wishlist
+from models import db, Book, User, Wishlist
 from functools import wraps
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -223,39 +223,6 @@ def delete_book_by_id(book_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/cart', methods=['GET'])
-def get_cart_items():
-    cart_items = CartItem.query.all()
-    cart_list = [{"id": item.id, "book_id": item.book_id,
-                  "book": {"id": item.book.id, "title": item.book.title, "author": item.book.author,
-                           "cover_image_url": item.book.cover_image_url}} for item in cart_items]
-    return jsonify(cart_list)
-
-
-# Define your route for adding a book to the cart
-@app.route('/api/cart/add', methods=['POST'])
-def add_to_cart():
-    # Get data from request
-    data = request.json
-    book_id = data.get('book_id')
-
-    # Check if book_id is provided
-    if not book_id:
-        return jsonify({'message': 'Book ID is required'}), 400
-
-    # Check if the book exists
-    book = Book.query.get(book_id)
-    if not book:
-        return jsonify({'message': 'Book not found'}), 404
-
-    # Create a new cart item for the current user
-    # cart_item = CartItem(book_id=book_id, user_id=current_user.id)
-    # db.session.add(cart_item)
-    # db.session.commit()
-
-    return jsonify({'message': 'Book added to cart successfully'}), 200
 
 
 @app.route('/api/wishlist', methods=['GET'])

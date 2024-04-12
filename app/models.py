@@ -68,15 +68,6 @@ class Book(db.Model):
         }
 
 
-# Define the CartItem model
-class CartItem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    book = db.relationship('Book', backref=db.backref('cart_items', lazy=True))
-    user = db.relationship('User', backref=db.backref('cart_items', lazy=True))
-
-
 class Wishlist(db.Model):
     """Represents a book in a user's wishlist.
 
