@@ -28,6 +28,15 @@ class KeycloakValidator:
         self.public_key = self.get_public_key()
 
     def get_public_key(self) -> str:
+        """Retrieves the public key from the configured realm URL.
+
+        Attempts to fetch the public key from the provided realm URL. If successful,
+        formats the key as PEM and caches it internally. Otherwise, logs an error
+        and returns an empty string.
+
+        Returns:
+            str: The public key in PEM format on success, otherwise an empty string.
+        """
         try:
             response = requests.get(self.realm_url)
             public_key = response.json()['public_key']
@@ -40,6 +49,20 @@ class KeycloakValidator:
             return ""
 
     def validate_token(self, token) -> TokenInfo | None:
+        """Attempts to validate a JSON Web Token (JWT).
+
+        First, retrieves the public key if not already cached. Then, it tries to
+        decode the provided JWT using the RS256 algorithm and a specific audience.
+        On successful decoding, a TokenInfo object is returned with the decoded data.
+        Otherwise, logs the error and returns None.
+
+        Args:
+            token (str): The JWT token to be validated.
+
+        Returns:
+            TokenInfo | None: A TokenInfo object containing decoded token information
+                on success, None otherwise.
+        """
         try:
             # Retry getting public key
             if self.public_key == "":
