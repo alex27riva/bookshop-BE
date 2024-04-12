@@ -148,6 +148,83 @@ def get_book(book_id):
         return jsonify({"message": "Book not found"}), 404
 
 
+@app.route('/api/admin/book', methods=['POST'])
+# TODO: Only admin can add book, add role check in JWT token
+# @jwt_required
+def add_new_book():
+    """Adds a new book to the database if user has admin role
+
+    Expects JSON data in the request body containing title, author,
+    (optional) price, and (optional) cover_image_url.
+
+    Returns:
+        JSON:
+            - message (str): 'Book added successfully' on success (201).
+            - error (str): Reason for failure on errors (400, 409, 500)
+    """
+    try:
+        # Get JSON data from request body
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'Missing data in request'}), 400
+
+        # Extract book information
+        title = data.get('title')
+        author = data.get('author')
+        price = data.get('price')
+        cover_image_url = data.get('cover_image_url')
+
+        if not all([title, author]):
+            return jsonify({'error': 'Missing required fields (title, author)'}), 400
+
+        # Check for duplicate book using unique combination (e.g., title + author)
+        existing_book = db.session.query(Book).filter_by(title=title, author=author).first()
+
+        if existing_book:
+            return jsonify({'error': 'Book already exists in database'}), 409
+
+        new_book = Book(title=title, author=author, price=price, cover_image_url=cover_image_url)
+
+        db.session.add(new_book)
+        db.session.commit()
+        return jsonify({'message': 'Book added successfully'}), 201
+
+    except Exception as e:
+        logging.error(e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/book/<int:book_id>', methods=['DELETE'])
+# TODO: Only admin can delete books, add role check in JWT token
+# @jwt_required
+def delete_book_by_id(book_id):
+    """Deletes a book from the database based on its ID, only if user is admin.
+
+    Args:
+        book_id (int): The ID of the book to be deleted.
+
+    Returns:
+        JSON:
+            - message (str): 'Book deleted successfully' on success (200).
+            - error (str): Reason for failure on errors (404, 500).
+    """
+    try:
+        # Delete book with matching ID
+        book_to_delete = Book.query.filter_by(id=book_id).first()
+
+        if book_to_delete is None:
+            return jsonify({'error': f'Book id:{book_id} not found'}), 404
+
+        db.session.delete(book_to_delete)
+        db.session.commit()
+
+        return jsonify({'message': 'Book deleted successfully'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/cart', methods=['GET'])
 def get_cart_items():
     cart_items = CartItem.query.all()
