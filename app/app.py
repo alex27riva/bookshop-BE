@@ -49,7 +49,7 @@ def jwt_required(func):
         if result:
             return func(result, *args, **kwargs)
         else:
-            return jsonify({'message': 'Invalid token'}), 403  # Forbidden
+            return jsonify({'error': 'Invalid token'}), 403  # Forbidden
 
     return wrapper
 
@@ -66,7 +66,7 @@ def create_account(token):
     email = token.email
     if User.query.filter_by(email=email).first():
         logging.debug(f"Account for {email} already exists")
-        return jsonify({"message": "User already registered"}), 400
+        return jsonify({"error": "User already registered"}), 400
 
     new_user = User(name=token.name, surname=token.surname, email=email)
     db.session.add(new_user)
@@ -87,7 +87,7 @@ def get_profile(token):
     user = User.query.filter_by(email=token.email).first()
     if user:
         return jsonify(user.to_json()), 200
-    return jsonify({"message": "User profile not found"}), 404
+    return jsonify({"error": "User profile not found"}), 404
 
 
 @app.route('/api/profile/picture', methods=['PUT'])
@@ -105,11 +105,11 @@ def update_profile_picture(token):
     """
     new_url = request.json.get('profile_pic_url')
     if not new_url:
-        return jsonify({'message': 'Please provide a profile picture URL'}), 400
+        return jsonify({'error': 'Please provide a profile picture URL'}), 400
 
     user = User.query.filter_by(email=token.email).first()
     if not user:
-        return jsonify({'message': 'User not found'}), 404
+        return jsonify({'error': 'User not found'}), 404
 
     user.profile_pic_url = new_url
     db.session.commit()
@@ -145,7 +145,7 @@ def get_book(book_id):
     if book:
         return jsonify(book.to_json())
     else:
-        return jsonify({"message": "Book not found"}), 404
+        return jsonify({"error": "Book not found"}), 404
 
 
 @app.route('/api/admin/book', methods=['POST'])
@@ -170,21 +170,21 @@ def add_new_book():
             return jsonify({'error': 'Missing data in request'}), 400
 
         # Extract book information
-        title = data.get('title')
-        author = data.get('author')
-        price = data.get('price')
-        cover_image_url = data.get('cover_image_url')
+        b_title = data.get('title')
+        b_author = data.get('author')
+        b_price = data.get('price')
+        b_cover_image_url = data.get('cover_image_url')
 
-        if not all([title, author]):
+        if not all([b_title, b_author]):
             return jsonify({'error': 'Missing required fields (title, author)'}), 400
 
         # Check for duplicate book using unique combination (e.g., title + author)
-        existing_book = db.session.query(Book).filter_by(title=title, author=author).first()
+        existing_book = db.session.query(Book).filter_by(title=b_title, author=b_author).first()
 
         if existing_book:
             return jsonify({'error': 'Book already exists in database'}), 409
 
-        new_book = Book(title=title, author=author, price=price, cover_image_url=cover_image_url)
+        new_book = Book(title=b_title, author=b_author, price=b_price, cover_image_url=b_cover_image_url)
 
         db.session.add(new_book)
         db.session.commit()
@@ -239,7 +239,7 @@ def get_wishlist(token):
     email = token.email
     db_user = User.query.filter_by(email=email).first()
     if db_user is None:
-        return jsonify({'message': 'User not in the database'}), 404
+        return jsonify({'error': 'User not in the database'}), 404
     user_id = db_user.id
 
     # Get all wishlist items for the user
@@ -278,24 +278,24 @@ def add_to_wishlist(token):
 
     db_user = User.query.filter_by(email=email).first()
     if db_user is None:
-        return jsonify({'message': 'User not in the database'}), 404
+        return jsonify({'error': 'User not in the database'}), 404
     user_id = db_user.id
     book_id = data.get('book_id')
 
     # Check if both user_id and book_id are provided
     if user_id is None or book_id is None:
         logging.debug(f"User_id and book_id are required, {user_id}, {book_id}")
-        return jsonify({'message': 'Both user_id and book_id are required.'}), 400
+        return jsonify({'error': 'Both user_id and book_id are required.'}), 400
 
     # Check if book exist
     book = Book.query.get(book_id)
 
     if book is None:
-        return jsonify({'message': f'Book with id {book_id} not found.'}), 404
+        return jsonify({'error': f'Book with id {book_id} not found.'}), 404
 
     # Check if the book is already in the user's wishlist
     if Wishlist.query.filter_by(user_id=user_id, book_id=book_id).first():
-        return jsonify({'message': 'This book is already in the wishlist.'}), 400
+        return jsonify({'error': 'This book is already in the wishlist.'}), 400
 
     # Add the book to the user's wishlist
     wishlist_item = Wishlist(user_id=user_id, book_id=book_id)
@@ -323,24 +323,24 @@ def remove_from_wishlist(token, book_id):
 
     db_user = User.query.filter_by(email=email).first()
     if db_user is None:
-        return jsonify({'message': 'User not in the database'}), 404
+        return jsonify({'error': 'User not in the database'}), 404
     user_id = db_user.id
 
     # Check if both user_id and book_id are provided
     if user_id is None or book_id is None:
-        return jsonify({'message': 'Both user_id and book_id are required.'}), 400
+        return jsonify({'error': 'Both user_id and book_id are required.'}), 400
 
     # Check if book exist
     book = Book.query.get(book_id)
 
     if book is None:
         logging.debug(f"Book id {book_id} not found")
-        return jsonify({'message': f'Book with id {book_id} not found.'}), 404
+        return jsonify({'error': f'Book with id {book_id} not found.'}), 404
 
     # Check if the book is already in the user's wishlist
     wishlist_item = Wishlist.query.filter_by(user_id=user_id, book_id=book_id).first()
     if wishlist_item is None:
-        return jsonify({'message': 'This book is not in your wishlist.'}), 400
+        return jsonify({'error': 'This book is not in your wishlist.'}), 400
 
     # Remove the book from wishlist
     db.session.delete(wishlist_item)
