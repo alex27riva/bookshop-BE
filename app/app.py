@@ -68,7 +68,7 @@ def create_account(token):
         logging.debug(f"Account for {email} already exists")
         return jsonify({"error": "User already registered"}), 400
 
-    new_user = User(name=token.name, surname=token.surname, email=email)
+    new_user = User(first_name=token.name, last_name=token.surname, email=email)
     db.session.add(new_user)
     db.session.commit()
     logging.debug(f"Account created for {email}")
@@ -222,6 +222,7 @@ def delete_book_by_id(book_id):
         return jsonify({'message': 'Book deleted successfully'}), 200
 
     except Exception as e:
+        logging.debug(e)
         return jsonify({'error': str(e)}), 500
 
 
@@ -357,6 +358,7 @@ if __name__ == '__main__':
             if not Book.query.filter(Book.title == title).scalar():
                 # Create and add book if not found
                 book_to_add = Book(title=title, author=author, price=price, cover_image_url=cover_image_url)
+                logging.debug(f"Added book {title}")
                 db.session.add(book_to_add)
         db.session.commit()
 
