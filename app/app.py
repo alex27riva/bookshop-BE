@@ -24,7 +24,7 @@ validator = KeycloakValidator(kc_url, env.CLIENT_ID)
 app.config.update({
     'SQLALCHEMY_DATABASE_URI': 'sqlite:///books.db',
     'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-    'SECRET_KEY': 'ThisIsNotASecureKeyForProduction!',
+    'SECRET_KEY': env.SECRET_KEY if env.SECRET_KEY else 'ThisIsNotASecureKeyForProduction!',
 })
 db.init_app(app)
 CORS(app)  # Enable CORS for all routes

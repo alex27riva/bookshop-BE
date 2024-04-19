@@ -8,12 +8,20 @@ See [Keycloak.md](Keycloak.md) for details.
 ## Flask Configuration
 Create a .env file in the root of the project with the following values
 
+
 ```
 CLIENT_ID=bookshop
 CLIENT_SECRET=
 KEYCLOAK_URI_SCHEME=http
 KEYCLOAK_HOST=localhost:8080
 KEYCLOAK_REALM=unimi
+SECRET_KEY=
+```
+
+Generate a secure `SECRET_KEY` with:
+
+```bash
+openssl rand -base64 32
 ```
 
 ## API documentation

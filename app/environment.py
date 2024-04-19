@@ -24,6 +24,7 @@ class Environment:
         self.KEYCLOAK_URI_SCHEME = os.getenv('KEYCLOAK_URI_SCHEME')
         self.KEYCLOAK_HOST = os.getenv('KEYCLOAK_HOST')
         self.REALM = os.getenv('KEYCLOAK_REALM')
+        self.SECRET_KEY = os.getenv('SECRET_KEY')
 
         # Check for required variables
         required_vars = ['CLIENT_ID', 'KEYCLOAK_URI_SCHEME', 'KEYCLOAK_HOST', 'REALM']
