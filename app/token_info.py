@@ -1,3 +1,6 @@
+from environment import Environment
+
+
 class TokenInfo:
     """
     This class simplifies access to information from a decoded JWT token.
@@ -9,16 +12,17 @@ class TokenInfo:
         Args:
          decoded_token (dict): The JWT token string.
         """
-
+        self.env = Environment()
         self.decoded_token = decoded_token
         self.name = self.get('given_name')
         self.surname = self.get('family_name')
         self.email = self.get('email')
+        self.roles = self.get('resource_access').get(self.env.CLIENT_ID).get('roles')
 
-    def get(self, key) -> str:
+    def get(self, key):
         """Retrieves a specific value from the decoded token data.
 
-        Args: key (str): The key of the desired value in the decoded token data. Valid keys: exp, iat, scope,
+        Args: key:  The key of the desired value in the decoded token data. Valid keys: exp, iat, scope,
         email_verified, name, preferred_username, given_name, family_name, email
 
         Returns:

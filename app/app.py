@@ -149,9 +149,8 @@ def get_book(book_id):
 
 
 @app.route('/api/admin/book', methods=['POST'])
-# TODO: Only admin can add book, add role check in JWT token
-# @jwt_required
-def add_new_book():
+@jwt_required
+def add_new_book(token):
     """Adds a new book to the database if user has admin role
 
     Expects JSON data in the request body containing title, author,
@@ -162,6 +161,8 @@ def add_new_book():
             - message (str): 'Book added successfully' on success (201).
             - error (str): Reason for failure on errors (400, 409, 500)
     """
+    if 'admin' not in token.roles:
+        return jsonify({"error": "User is not admin"}), 403
     try:
         # Get JSON data from request body
         data = request.get_json()
@@ -182,12 +183,14 @@ def add_new_book():
         existing_book = db.session.query(Book).filter_by(title=b_title, author=b_author).first()
 
         if existing_book:
+            logging.debug("Book already exists")
             return jsonify({'error': 'Book already exists in database'}), 409
 
         new_book = Book(title=b_title, author=b_author, price=b_price, cover_image_url=b_cover_image_url)
 
         db.session.add(new_book)
         db.session.commit()
+        logging.debug("Book added from admin")
         return jsonify({'message': 'Book added successfully'}), 201
 
     except Exception as e:
@@ -196,12 +199,12 @@ def add_new_book():
 
 
 @app.route('/api/admin/book/<int:book_id>', methods=['DELETE'])
-# TODO: Only admin can delete books, add role check in JWT token
-# @jwt_required
-def delete_book_by_id(book_id):
+@jwt_required
+def delete_book_by_id(token, book_id):
     """Deletes a book from the database based on its ID, only if user is admin.
 
     Args:
+        token (TokenInfo): JWT token
         book_id (int): The ID of the book to be deleted.
 
     Returns:
@@ -209,6 +212,9 @@ def delete_book_by_id(book_id):
             - message (str): 'Book deleted successfully' on success (200).
             - error (str): Reason for failure on errors (404, 500).
     """
+    if 'admin' not in token.roles:
+        return jsonify({"error": "User is not admin"}), 403
+
     try:
         # Delete book with matching ID
         book_to_delete = Book.query.filter_by(id=book_id).first()
