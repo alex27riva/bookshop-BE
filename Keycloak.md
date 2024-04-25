@@ -1,26 +1,9 @@
 # Keycloak
 
-How to correctly configure Keycloak
+How to configure Keycloak
 
 ## Client
 
-Create a new client and give it a name (`client-id`).
+In Keycloak console select _unimi_ realm, go to _Clients_ and click on _Import client_.
 
-### Access settings
-
-**Root URL:** `http://localhost:8080/*`
-
-**Home URL:** 'http://localhost:8080/*'
-
-**Valid redirect URLs:** `*`  don't use this in production
-
-**Valid post logout redirect URIs:** `+`
-
-**Web origins:** `*`
-
-**Admin URLs:** `http://localhost:8080/`
-
-
-### Capability config
-
-- enable _Client authentication_
+Load `bookshop.json` from `keycloak/` folder, give it a _Client ID_ and click _save_.
