@@ -302,7 +302,7 @@ def add_to_wishlist(token):
 
     # Check if the book is already in the user's wishlist
     if Wishlist.query.filter_by(user_id=user_id, book_id=book_id).first():
-        return jsonify({'error': 'This book is already in the wishlist.'}), 400
+        return jsonify({'error': 'This book is already in the wishlist.'}), 200
 
     # Add the book to the user's wishlist
     wishlist_item = Wishlist(user_id=user_id, book_id=book_id)
