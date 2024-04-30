@@ -72,6 +72,18 @@ class KeycloakValidator:
             decoded_token = jwt.decode(token, self.public_key, algorithms=['RS256'], audience='account')
             logging.debug(f"Decoded token {decoded_token}")
             return TokenInfo(decoded_token)
+
+        except jwt.exceptions.DecodeError as e:
+            logging.error(f"Error decoding token: Invalid format or signature - {e}")
+            return None
+
+        except jwt.exceptions.ExpiredSignatureError as e:
+            logging.error(f"Error decoding token: Token expired - {e}")
+            return None
+
+        except AttributeError as e:
+            logging.debug(f"Error accessing an attribute - {e}")
+
         except Exception as e:
-            logging.error(f"Error decoding token: {e}")
+            logging.error(f"Unexpected error decoding token: - {e}")
             return None
