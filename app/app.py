@@ -66,7 +66,7 @@ def create_account(token):
     email = token.email
     if User.query.filter_by(email=email).first():
         logging.debug(f"Account for {email} already exists")
-        return jsonify({"error": "User already registered"}), 400
+        return jsonify({"message": "User already registered"}), 200
 
     new_user = User(first_name=token.name, last_name=token.surname, email=email)
     db.session.add(new_user)
@@ -353,7 +353,7 @@ def remove_from_wishlist(token, book_id):
     db.session.delete(wishlist_item)
     db.session.commit()
     logging.debug(f"Book id {book_id} removed from wishlist.")
-    return jsonify({'message': 'Book removed from wishlist successfully.'}), 201
+    return jsonify({'message': 'Book removed from wishlist successfully.'}), 200
 
 
 if __name__ == '__main__':
